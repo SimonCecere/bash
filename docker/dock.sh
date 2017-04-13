@@ -78,10 +78,12 @@ chmod -R 755 storage/framework
 
 
 # make .env if not already created
- if [ ! -f ".env" ]; then
+if [ ! -f ".env" ]; then
     cp .env.example .env
     echo ".env was created from example file"
- fi
+fi
+
+export XDEBUG_CONFIG="remote_host=$(ipconfig getifaddr en0)";
 
 # make .env if not already created
 if [ ! -f "get_docker_assets.sh" ]; then
@@ -127,13 +129,11 @@ case $ARG1 in
     ;;
     [dD][oO][wW][nN]|[-][dD][oO][wW][nN]|[-][-][dD][oO][wW][nN])
 
-            export XDEBUG_CONFIG="remote_host=$(ipconfig getifaddr en0)";
             docker-compose down;
             exit;
     ;;
     [fF][oO][rR][cC][eE][dD][oO][wW][nN]|[-][fF][oO][rR][cC][eE][dD][oO][wW][nN]|[-][-][fF][oO][rR][cC][eE][dD][oO][wW][nN]|[fF][dD][oO][wW][nN]|[-][fF][dD][oO][wW][nN]|[-][-][fF][dD][oO][wW][nN])
 
-            export XDEBUG_CONFIG="remote_host=$(ipconfig getifaddr en0)";
             echo "{$RED}This command is going to remove every volume for this project"
             echo "(that means you will lose all database changes made until now){$BLUE}"
             echo "Do you wish to continue? type y or yes to continue"
@@ -272,21 +272,20 @@ fi
 #load variables of env file
 ##############################################################
 function loadenv() {
-  env=${1:-.env}
-  echo Loading $env
-  file=`mktemp -t tmp `
-  if [ -f $env ]; then
-    cat $env | while read line; do
-      echo export $line >> $file;
-    done
-    source $file
-  else
-    echo No file $env
-  fi
-  echo Loaded $env
-
-export XDEBUG_CONFIG="remote_host=$(ipconfig getifaddr en0)"
-echo "$XDEBUG_CONFIG"
+    env=${1:-.env}
+    echo Loading $env
+    file=`mktemp`
+    if [ -f $env ]; then
+            cat $env | while read line; do
+                    if [[ $line =~ ^[a-zA-Z\ ]+ ]]; then
+                            echo export $line >> $file;
+                    fi
+            done
+            source $file
+    else
+            echo No file $env
+    fi
+    echo Loaded $env
 }
 
 ##############################################################
@@ -440,7 +439,7 @@ if [ "$REMOVEDEPENDENCIES" == "$TRUE" ]; then
         YARNEND=$(date +%s);
         echo "#########################################################################"
     fi
-    if [ "$doc_npm" == "true" && "$doc_yarn" != "true" ]; then
+    if [ "$doc_npm" == "true" ] && [ "$doc_yarn" != "true" ]; then
         NPMSTART=$(date +%s);
         echo "#########################################################################${RED}"
         echo "#########################################################################"
